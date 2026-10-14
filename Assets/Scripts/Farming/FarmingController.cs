@@ -5,6 +5,7 @@ namespace FarmingSystem
     /// <summary>
     /// Player controller component for targeting and interacting with GardenPlots.
     /// Supports facing-direction targeting, mouse-hover targeting, and action execution.
+    /// Also handles using special items (Pocket Watch) from the hotbar via the interact key.
     /// </summary>
     public class FarmingController : MonoBehaviour
     {
@@ -34,9 +35,9 @@ namespace FarmingSystem
 
         private void Awake()
         {
-            playerMovement = GetComponent<TopDownPlayerController>();
+            playerMovement  = GetComponent<TopDownPlayerController>();
             playerInventory = GetComponent<PlayerInventory>();
-            mainCamera = Camera.main;
+            mainCamera      = Camera.main;
         }
 
         private void Update()
@@ -61,9 +62,7 @@ namespace FarmingSystem
                 {
                     Collider2D hit = Physics2D.OverlapPoint(mouseWorld);
                     if (hit != null)
-                    {
                         foundPlot = hit.GetComponentInParent<GardenPlot>();
-                    }
                 }
             }
 
@@ -73,8 +72,8 @@ namespace FarmingSystem
                 Vector2 facingDir = playerMovement != null ? playerMovement.LastFacingDirection : Vector2.down;
                 Vector2 targetPos = (Vector2)transform.position + facingDir * facingTargetDistance;
 
-                Collider2D[] hits = Physics2D.OverlapCircleAll(targetPos, checkRadius);
-                float closestDist = float.MaxValue;
+                Collider2D[] hits   = Physics2D.OverlapCircleAll(targetPos, checkRadius);
+                float closestDist   = float.MaxValue;
 
                 foreach (var hit in hits)
                 {
@@ -85,7 +84,7 @@ namespace FarmingSystem
                         if (dist < closestDist)
                         {
                             closestDist = dist;
-                            foundPlot = plot;
+                            foundPlot   = plot;
                         }
                     }
                 }
@@ -94,23 +93,15 @@ namespace FarmingSystem
             // Update highlighting
             if (currentTargetPlot != foundPlot)
             {
-                if (currentTargetPlot != null)
-                {
-                    currentTargetPlot.SetHighlight(false);
-                }
-
+                if (currentTargetPlot != null) currentTargetPlot.SetHighlight(false);
                 currentTargetPlot = foundPlot;
-
-                if (currentTargetPlot != null)
-                {
-                    currentTargetPlot.SetHighlight(true);
-                }
+                if (currentTargetPlot != null) currentTargetPlot.SetHighlight(true);
             }
         }
 
         private void HandleInteractionInput()
         {
-            bool keyPressed = Input.GetKeyDown(interactKey) || Input.GetKeyDown(alternateInteractKey);
+            bool keyPressed   = Input.GetKeyDown(interactKey) || Input.GetKeyDown(alternateInteractKey);
             bool mouseClicked = Input.GetMouseButtonDown(0);
 
             // Avoid triggering when clicking on UI
@@ -120,10 +111,23 @@ namespace FarmingSystem
                 return;
             }
 
-            if ((keyPressed || mouseClicked) && currentTargetPlot != null)
+            if (!keyPressed && !mouseClicked) return;
+
+            // ── Special item check (Pocket Watch) ──────────────────────────────────
+            ItemData heldItem = playerInventory != null ? playerInventory.GetSelectedItem() : null;
+            if (heldItem != null && heldItem.IsPocketWatch)
             {
-                ExecuteInteraction(currentTargetPlot);
+                if (keyPressed || mouseClicked)
+                {
+                    if (InventoryUI.Instance != null)
+                        InventoryUI.Instance.RequestPocketWatchUse();
+                    return;
+                }
             }
+
+            // ── Garden plot interaction ────────────────────────────────────────────
+            if (currentTargetPlot != null)
+                ExecuteInteraction(currentTargetPlot);
         }
 
         private void ExecuteInteraction(GardenPlot plot)
@@ -136,48 +140,28 @@ namespace FarmingSystem
             if (!string.IsNullOrEmpty(feedback))
             {
                 if (InventoryUI.Instance != null)
-                {
                     InventoryUI.Instance.ShowNotification(feedback, success);
-                }
                 else
-                {
                     Debug.Log($"[Farming] {feedback}");
-                }
             }
 
-            if (punchOnInteract && success)
-            {
-                TriggerToolPunch();
-            }
+            if (punchOnInteract && success) TriggerToolPunch();
         }
 
         private void HandleDayAdvanceInput()
         {
             if (Input.GetKeyDown(advanceDayKey))
             {
-                if (GardenManager.Instance != null)
-                {
+                // The key shortcut routes through InventoryUI so the 7 PM gate is respected
+                if (InventoryUI.Instance != null)
+                    InventoryUI.Instance.RequestNextDay();
+                else if (GardenManager.Instance != null)
                     GardenManager.Instance.AdvanceDay();
-                }
-                else
-                {
-                    // Fallback: Find all plots in scene
-                    GardenPlot[] allPlots = FindObjectsOfType<GardenPlot>();
-                    foreach (var plot in allPlots)
-                    {
-                        plot.AdvanceDay();
-                    }
-                    if (InventoryUI.Instance != null)
-                    {
-                        InventoryUI.Instance.ShowNotification("Advanced to Next Day!", true);
-                    }
-                }
             }
         }
 
         private void TriggerToolPunch()
         {
-            // Subtle player tool swing animation (nudge in facing direction)
             Vector2 dir = playerMovement != null ? playerMovement.LastFacingDirection : Vector2.down;
             transform.position += (Vector3)(dir * 0.08f);
         }

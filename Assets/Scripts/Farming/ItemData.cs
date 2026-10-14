@@ -7,7 +7,8 @@ namespace FarmingSystem
         Tool,
         Seed,
         Crop,
-        Consumable
+        Consumable,
+        Special     // Used for unique items like the Pocket Watch
     }
 
     public enum ToolType
@@ -17,6 +18,15 @@ namespace FarmingSystem
         WateringCan,
         Scythe,
         Axe
+    }
+
+    /// <summary>
+    /// Special item sub-type for items that trigger unique world interactions.
+    /// </summary>
+    public enum SpecialItemType
+    {
+        None,
+        PocketWatch     // Rewinds time to the previous day
     }
 
     [CreateAssetMenu(fileName = "NewItem", menuName = "Farming/Item Data")]
@@ -32,6 +42,10 @@ namespace FarmingSystem
         public ItemType itemType = ItemType.Tool;
         public ToolType toolType = ToolType.None;
 
+        [Header("Special Item")]
+        [Tooltip("Only relevant when itemType is Special.")]
+        public SpecialItemType specialItemType = SpecialItemType.None;
+
         [Header("Inventory & Visuals")]
         public Sprite icon;
         public int maxStack = 99;
@@ -40,8 +54,10 @@ namespace FarmingSystem
         [Tooltip("The crop this seed produces when planted on tilled soil.")]
         public CropData cropData;
 
-        public bool IsTool => itemType == ItemType.Tool;
-        public bool IsSeed => itemType == ItemType.Seed && cropData != null;
-        public bool IsCrop => itemType == ItemType.Crop;
+        public bool IsTool        => itemType == ItemType.Tool;
+        public bool IsSeed        => itemType == ItemType.Seed && cropData != null;
+        public bool IsCrop        => itemType == ItemType.Crop;
+        public bool IsSpecial     => itemType == ItemType.Special;
+        public bool IsPocketWatch => IsSpecial && specialItemType == SpecialItemType.PocketWatch;
     }
 }

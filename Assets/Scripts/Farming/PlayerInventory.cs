@@ -22,6 +22,8 @@ namespace FarmingSystem
         [SerializeField] private ItemData startingWateringCan;
         [SerializeField] private ItemData startingSeedPack;
         [SerializeField] private int startingSeedCount = 15;
+        [Tooltip("Pocket Watch special item — placed in slot 4 at game start.")]
+        [SerializeField] private ItemData startingPocketWatch;
 
         // Events
         public event Action OnInventoryChanged;
@@ -85,6 +87,12 @@ namespace FarmingSystem
             if (startingSeedPack != null && slots[2].IsEmpty)
             {
                 slots[2].Set(startingSeedPack, startingSeedCount);
+            }
+
+            // Give Pocket Watch in slot 3 if empty (unique item, maxStack = 1)
+            if (startingPocketWatch != null && slots.Length > 3 && slots[3].IsEmpty)
+            {
+                slots[3].Set(startingPocketWatch, 1);
             }
         }
 

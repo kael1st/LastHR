@@ -38,13 +38,13 @@ namespace FarmingSystem
         [SerializeField] private Sprite tilledWateredSprite;
 
         // Public properties
-        public PlotSoilState SoilState => soilState;
-        public CropData CurrentCrop => currentCrop;
-        public int CurrentGrowthStage => currentGrowthStage;
-        public bool IsRipe => isRipe;
-        public bool HasCrop => currentCrop != null;
-        public bool IsWatered => soilState == PlotSoilState.TilledWatered;
-        public bool IsTilled => soilState != PlotSoilState.Untilled;
+        public PlotSoilState SoilState       => soilState;
+        public CropData      CurrentCrop     => currentCrop;
+        public int           CurrentGrowthStage => currentGrowthStage;
+        public bool          IsRipe          => isRipe;
+        public bool          HasCrop         => currentCrop != null;
+        public bool          IsWatered       => soilState == PlotSoilState.TilledWatered;
+        public bool          IsTilled        => soilState != PlotSoilState.Untilled;
 
         private void Awake()
         {
@@ -118,8 +118,8 @@ namespace FarmingSystem
         public void ConfigureSprites(Sprite untilled, Sprite tilledDry, Sprite tilledWatered)
         {
             EnsureComponents();
-            untilledSprite = untilled;
-            tilledDrySprite = tilledDry;
+            untilledSprite     = untilled;
+            tilledDrySprite    = tilledDry;
             tilledWateredSprite = tilledWatered;
             UpdateVisuals();
         }
@@ -128,18 +128,14 @@ namespace FarmingSystem
         {
             EnsureComponents();
             if (highlightRenderer != null)
-            {
                 highlightRenderer.sprite = highlight;
-            }
         }
 
         public void SetHighlight(bool active)
         {
             EnsureComponents();
             if (highlightRenderer != null)
-            {
                 highlightRenderer.enabled = active;
-            }
         }
 
         public void UpdateVisuals()
@@ -153,15 +149,15 @@ namespace FarmingSystem
                 {
                     case PlotSoilState.Untilled:
                         soilRenderer.sprite = untilledSprite;
-                        soilRenderer.color = Color.white;
+                        soilRenderer.color  = Color.white;
                         break;
                     case PlotSoilState.TilledDry:
                         soilRenderer.sprite = tilledDrySprite != null ? tilledDrySprite : untilledSprite;
-                        soilRenderer.color = Color.white;
+                        soilRenderer.color  = Color.white;
                         break;
                     case PlotSoilState.TilledWatered:
                         soilRenderer.sprite = tilledWateredSprite != null ? tilledWateredSprite : tilledDrySprite;
-                        soilRenderer.color = Color.white;
+                        soilRenderer.color  = Color.white;
                         break;
                 }
             }
@@ -172,12 +168,12 @@ namespace FarmingSystem
                 if (currentCrop != null)
                 {
                     cropRenderer.enabled = true;
-                    cropRenderer.sprite = currentCrop.GetSpriteForStage(currentGrowthStage);
+                    cropRenderer.sprite  = currentCrop.GetSpriteForStage(currentGrowthStage);
                 }
                 else
                 {
                     cropRenderer.enabled = false;
-                    cropRenderer.sprite = null;
+                    cropRenderer.sprite  = null;
                 }
             }
         }
@@ -207,25 +203,36 @@ namespace FarmingSystem
 
             UpdateVisuals();
             if (Application.isPlaying && cropRenderer != null)
-            {
                 StartCoroutine(AnimateBounce(cropRenderer.transform, 1.15f, 0.15f));
-            }
         }
 
         public void AdvanceDay()
         {
-            // Harvest Moon mechanic: Watered soil advances growth by 1 stage, then dries out
+            // Harvest Moon mechanic: watered soil advances growth by 1 stage, then dries out
             if (soilState == PlotSoilState.TilledWatered)
             {
                 if (HasCrop && !isRipe)
-                {
                     AdvanceGrowthStage();
-                }
-                // Soil dries out the next day
+                // Soil dries out the next morning
                 soilState = PlotSoilState.TilledDry;
             }
 
             stageTimer = 0f;
+            UpdateVisuals();
+        }
+
+        /// <summary>
+        /// Restores this plot to a previously captured snapshot state.
+        /// Called by GardenManager.RewindDay() when the Pocket Watch is used.
+        /// </summary>
+        public void RestoreFromSnapshot(PlotSoilState newSoilState, CropData newCrop,
+                                        int newGrowthStage, bool newIsRipe, float newStageTimer)
+        {
+            soilState          = newSoilState;
+            currentCrop        = newCrop;
+            currentGrowthStage = newGrowthStage;
+            isRipe             = newIsRipe;
+            stageTimer         = newStageTimer;
             UpdateVisuals();
         }
 
@@ -236,73 +243,65 @@ namespace FarmingSystem
             soilState = PlotSoilState.TilledDry;
             UpdateVisuals();
             if (Application.isPlaying && soilRenderer != null)
-            {
                 StartCoroutine(AnimateBounce(soilRenderer.transform, 1.1f, 0.12f));
-            }
             return true;
         }
 
         public bool Water()
         {
-            if (soilState == PlotSoilState.Untilled) return false;
+            if (soilState == PlotSoilState.Untilled)    return false;
             if (soilState == PlotSoilState.TilledWatered) return false;
 
             soilState = PlotSoilState.TilledWatered;
             UpdateVisuals();
             if (Application.isPlaying && soilRenderer != null)
-            {
                 StartCoroutine(AnimateBounce(soilRenderer.transform, 1.08f, 0.12f));
-            }
             return true;
         }
 
         public bool Plant(ItemData seedItem)
         {
             if (soilState == PlotSoilState.Untilled) return false;
-            if (HasCrop) return false;
+            if (HasCrop)                             return false;
             if (seedItem == null || seedItem.cropData == null) return false;
 
-            currentCrop = seedItem.cropData;
+            currentCrop        = seedItem.cropData;
             currentGrowthStage = 0;
-            isRipe = false;
-            stageTimer = 0f;
+            isRipe             = false;
+            stageTimer         = 0f;
 
             UpdateVisuals();
             if (Application.isPlaying && cropRenderer != null)
-            {
                 StartCoroutine(AnimateBounce(cropRenderer.transform, 1.25f, 0.2f));
-            }
             return true;
         }
 
         public bool Harvest(PlayerInventory inventory, out ItemData harvestedItem, out int yieldAmount)
         {
             harvestedItem = null;
-            yieldAmount = 0;
+            yieldAmount   = 0;
 
             if (!HasCrop || !isRipe) return false;
 
             harvestedItem = currentCrop.harvestItem;
-            yieldAmount = Random.Range(currentCrop.minHarvestYield, currentCrop.maxHarvestYield + 1);
+            yieldAmount   = Random.Range(currentCrop.minHarvestYield, currentCrop.maxHarvestYield + 1);
 
             if (inventory != null && harvestedItem != null)
-            {
                 inventory.AddItem(harvestedItem, yieldAmount);
-            }
 
             // Regrow or clear
             if (currentCrop.regrows)
             {
                 currentGrowthStage = currentCrop.regrowStage;
-                isRipe = false;
-                stageTimer = 0f;
+                isRipe             = false;
+                stageTimer         = 0f;
             }
             else
             {
-                currentCrop = null;
+                currentCrop        = null;
                 currentGrowthStage = 0;
-                isRipe = false;
-                stageTimer = 0f;
+                isRipe             = false;
+                stageTimer         = 0f;
             }
 
             UpdateVisuals();
@@ -401,17 +400,11 @@ namespace FarmingSystem
             }
 
             if (soilState == PlotSoilState.Untilled)
-            {
                 feedbackMessage = "Use the Hoe [1] to till this soil.";
-            }
             else if (soilState == PlotSoilState.TilledDry)
-            {
                 feedbackMessage = "Plant seeds [3] or water with Watering Can [2].";
-            }
             else
-            {
                 feedbackMessage = "Soil is watered! Plant seeds [3].";
-            }
 
             return false;
         }
@@ -425,7 +418,7 @@ namespace FarmingSystem
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
-                float t = elapsed / duration;
+                float t     = elapsed / duration;
                 float scale = Mathf.Lerp(maxScale, 1.0f, t);
                 target.localScale = originalScale * scale;
                 yield return null;
