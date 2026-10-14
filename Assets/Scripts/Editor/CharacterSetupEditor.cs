@@ -3,142 +3,164 @@ using UnityEditor;
 using UnityEngine;
 using System.IO;
 
+/// <summary>
+/// Editor utility to configure the character sprites and wire them
+/// up to the Player GameObject's PlayerVisuals2D component.
+/// Accessible via the "Character" top menu.
+/// </summary>
 public static class CharacterSetupEditor
 {
-    private const string CHARACTER_SPRITES_PATH = "Assets/Sprites/Character";
+    private const string SPRITES_PATH = "Assets/Sprites/Character";
 
-    [MenuItem("Character/Setup Character Sprites & Player")]
-    public static void SetupAll()
+    // ------------------------------------------------------------------
+    // Menu Items
+    // ------------------------------------------------------------------
+    [MenuItem("Character/1 – Configure Texture Importers")]
+    public static void ConfigureTextureImporters()
     {
-        ConfigureCharacterImporters();
-        AssetDatabase.Refresh();
-        ApplyToPlayer();
-        AssetDatabase.SaveAssets();
-        Debug.Log("<color=green>[CharacterSetup] Character sprites imported and configured on Player successfully!</color>");
-    }
-
-    [MenuItem("Character/Configure Character Texture Importers")]
-    public static void ConfigureCharacterImporters()
-    {
-        if (!Directory.Exists(CHARACTER_SPRITES_PATH))
+        if (!Directory.Exists(SPRITES_PATH))
         {
-            Debug.LogError($"Character sprites path does not exist: {CHARACTER_SPRITES_PATH}");
+            Debug.LogError($"[CharacterSetup] Sprites folder not found: {SPRITES_PATH}");
             return;
         }
 
-        string[] guids = AssetDatabase.FindAssets("t:Texture2D", new[] { CHARACTER_SPRITES_PATH });
-        foreach (var guid in guids)
+        string[] guids = AssetDatabase.FindAssets("t:Texture2D", new[] { SPRITES_PATH });
+        int count = 0;
+        foreach (string guid in guids)
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
             TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
             if (importer != null)
             {
-                importer.textureType = TextureImporterType.Sprite;
-                importer.spritePixelsPerUnit = 32;
-                importer.filterMode = FilterMode.Point;
-                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.textureType          = TextureImporterType.Sprite;
+                importer.spritePixelsPerUnit  = 32;
+                importer.filterMode           = FilterMode.Point;
+                importer.textureCompression   = TextureImporterCompression.Uncompressed;
                 importer.SaveAndReimport();
+                count++;
             }
         }
-        Debug.Log($"[CharacterSetup] Configured {guids.Length} character textures at 32 PPU Point filtering.");
+        Debug.Log($"<color=cyan>[CharacterSetup] Configured {count} character textures (32 PPU, Point filter).</color>");
     }
 
-    [MenuItem("Character/Apply Character To Player In Scene")]
+    [MenuItem("Character/2 – Apply Character To Player")]
     public static void ApplyToPlayer()
     {
-        GameObject player = GameObject.FindWithTag("Player");
+        // 1. Find Player
+        GameObject player = GameObject.FindWithTag("Player") ?? GameObject.Find("Player");
         if (player == null)
         {
-            player = GameObject.Find("Player");
-        }
-
-        if (player == null)
-        {
-            Debug.LogError("No GameObject with tag or name 'Player' found in the active scene!");
+            Debug.LogError("[CharacterSetup] No GameObject with tag 'Player' found in the active scene!");
             return;
         }
 
-        // 1. Load Character Sprites
-        Sprite idleDown = AssetDatabase.LoadAssetAtPath<Sprite>($"{CHARACTER_SPRITES_PATH}/player_idle_down.png");
-        Sprite idleUp = AssetDatabase.LoadAssetAtPath<Sprite>($"{CHARACTER_SPRITES_PATH}/player_idle_up.png");
-        Sprite idleSide = AssetDatabase.LoadAssetAtPath<Sprite>($"{CHARACTER_SPRITES_PATH}/player_idle_side.png");
+        // 2. Load Idle Sprites
+        Sprite idleDown  = Load("player_idle_down.png");
+        Sprite idleUp    = Load("player_idle_up.png");
+        Sprite idleRight = Load("player_idle_side.png");  // Right-facing (side)
+        Sprite idleLeft  = Load("player_idle_left.png");  // Left-facing (mirrored)
 
-        Sprite[] walkDown = new Sprite[4];
-        Sprite[] walkUp = new Sprite[4];
-        Sprite[] walkSide = new Sprite[4];
+        // 3. Load Walk Cycles
+        Sprite[] walkDown  = LoadFrames("player_walk_down_{0}.png",  4);
+        Sprite[] walkUp    = LoadFrames("player_walk_up_{0}.png",    4);
+        Sprite[] walkRight = LoadFrames("player_walk_side_{0}.png",  4);  // Right walk
+        Sprite[] walkLeft  = LoadFrames("player_walk_left_{0}.png",  4);  // Left walk
 
-        for (int i = 0; i < 4; i++)
-        {
-            walkDown[i] = AssetDatabase.LoadAssetAtPath<Sprite>($"{CHARACTER_SPRITES_PATH}/player_walk_down_{i}.png");
-            walkUp[i] = AssetDatabase.LoadAssetAtPath<Sprite>($"{CHARACTER_SPRITES_PATH}/player_walk_up_{i}.png");
-            walkSide[i] = AssetDatabase.LoadAssetAtPath<Sprite>($"{CHARACTER_SPRITES_PATH}/player_walk_side_{i}.png");
-        }
-
-        // 2. Configure SpriteRenderer on Player
+        // 4. SpriteRenderer – reset colour tint from capsule placeholder
         SpriteRenderer sr = player.GetComponent<SpriteRenderer>();
         if (sr != null)
         {
-            Undo.RecordObject(sr, "Configure Player SpriteRenderer");
+            Undo.RecordObject(sr, "Reset Player SpriteRenderer");
             sr.sprite = idleDown;
-            sr.color = Color.white; // Reset capsule blue tint to pure white
+            sr.color  = Color.white;
             EditorUtility.SetDirty(sr);
         }
 
-        // 3. Configure PlayerVisuals2D component
+        // 5. Add / configure PlayerVisuals2D
         PlayerVisuals2D visuals = player.GetComponent<PlayerVisuals2D>();
         if (visuals == null)
-        {
             visuals = Undo.AddComponent<PlayerVisuals2D>(player);
-        }
 
         SerializedObject so = new SerializedObject(visuals);
-        so.FindProperty("idleDown").objectReferenceValue = idleDown;
-        so.FindProperty("idleUp").objectReferenceValue = idleUp;
-        so.FindProperty("idleSide").objectReferenceValue = idleSide;
 
-        SerializedProperty walkDownProp = so.FindProperty("walkDown");
-        walkDownProp.arraySize = 4;
-        for (int i = 0; i < 4; i++) walkDownProp.GetArrayElementAtIndex(i).objectReferenceValue = walkDown[i];
+        // Idle sprites
+        so.FindProperty("idleDown").objectReferenceValue  = idleDown;
+        so.FindProperty("idleUp").objectReferenceValue    = idleUp;
+        so.FindProperty("idleRight").objectReferenceValue = idleRight;
+        so.FindProperty("idleLeft").objectReferenceValue  = idleLeft;
 
-        SerializedProperty walkUpProp = so.FindProperty("walkUp");
-        walkUpProp.arraySize = 4;
-        for (int i = 0; i < 4; i++) walkUpProp.GetArrayElementAtIndex(i).objectReferenceValue = walkUp[i];
+        // Walk cycles
+        AssignSpriteArray(so, "walkDown",  walkDown);
+        AssignSpriteArray(so, "walkUp",    walkUp);
+        AssignSpriteArray(so, "walkRight", walkRight);
+        AssignSpriteArray(so, "walkLeft",  walkLeft);
 
-        SerializedProperty walkSideProp = so.FindProperty("walkSide");
-        walkSideProp.arraySize = 4;
-        for (int i = 0; i < 4; i++) walkSideProp.GetArrayElementAtIndex(i).objectReferenceValue = walkSide[i];
-
-        so.FindProperty("walkFPS").floatValue = 6f;
-        so.FindProperty("sprintFPSMultiplier").floatValue = 1.4f;
-        so.FindProperty("flipOnLeft").boolValue = true;
+        // Animation settings
+        so.FindProperty("walkFPS").floatValue              = 6f;
+        so.FindProperty("sprintFPSMultiplier").floatValue  = 1.5f;
         so.ApplyModifiedProperties();
         EditorUtility.SetDirty(visuals);
 
-        // 4. Configure TopDownPlayerController
-        TopDownPlayerController controller = player.GetComponent<TopDownPlayerController>();
-        if (controller != null)
+        // 6. Disable built-in sprite flipper on TopDownPlayerController
+        TopDownPlayerController ctrl = player.GetComponent<TopDownPlayerController>();
+        if (ctrl != null)
         {
-            SerializedObject ctrlSo = new SerializedObject(controller);
-            // Disable built-in sprite flip to let PlayerVisuals2D manage it consistently
+            SerializedObject ctrlSo = new SerializedObject(ctrl);
             ctrlSo.FindProperty("flipSpriteOnLeft").boolValue = false;
             ctrlSo.ApplyModifiedProperties();
-            EditorUtility.SetDirty(controller);
+            EditorUtility.SetDirty(ctrl);
         }
 
-        // 5. Deactivate old FaceIndicator child
-        Transform faceIndicator = player.transform.Find("FaceIndicator");
-        if (faceIndicator != null)
+        // 7. Hide old FaceIndicator child (replaced by directional sprites)
+        Transform fi = player.transform.Find("FaceIndicator");
+        if (fi != null)
         {
-            Undo.RecordObject(faceIndicator.gameObject, "Hide FaceIndicator");
-            faceIndicator.gameObject.SetActive(false);
-            EditorUtility.SetDirty(faceIndicator.gameObject);
+            Undo.RecordObject(fi.gameObject, "Hide FaceIndicator");
+            fi.gameObject.SetActive(false);
+            EditorUtility.SetDirty(fi.gameObject);
         }
 
-        // 6. Mark scene dirty and save
-        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+        // 8. Mark scene dirty & save
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
+            UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
         UnityEditor.SceneManagement.EditorSceneManager.SaveOpenScenes();
 
-        Debug.Log("<color=green>[CharacterSetup] Player GameObject updated with new reference character visuals!</color>");
+        Debug.Log("<color=green>[CharacterSetup] Player updated with character sprites + animations!</color>");
+    }
+
+    [MenuItem("Character/3 – Full Setup (Import + Apply)")]
+    public static void FullSetup()
+    {
+        ConfigureTextureImporters();
+        AssetDatabase.Refresh();
+        ApplyToPlayer();
+    }
+
+    // ------------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------------
+    private static Sprite Load(string filename)
+    {
+        string path = $"{SPRITES_PATH}/{filename}";
+        Sprite s = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        if (s == null) Debug.LogWarning($"[CharacterSetup] Sprite not found: {path}");
+        return s;
+    }
+
+    private static Sprite[] LoadFrames(string pattern, int count)
+    {
+        Sprite[] frames = new Sprite[count];
+        for (int i = 0; i < count; i++)
+            frames[i] = Load(string.Format(pattern, i));
+        return frames;
+    }
+
+    private static void AssignSpriteArray(SerializedObject so, string propName, Sprite[] sprites)
+    {
+        SerializedProperty prop = so.FindProperty(propName);
+        prop.arraySize = sprites.Length;
+        for (int i = 0; i < sprites.Length; i++)
+            prop.GetArrayElementAtIndex(i).objectReferenceValue = sprites[i];
     }
 }
 #endif

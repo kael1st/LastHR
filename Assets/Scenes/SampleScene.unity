@@ -5016,7 +5016,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &957687576
 Transform:
   m_ObjectHideFlags: 0
@@ -5632,6 +5632,7 @@ GameObject:
   - component: {fileID: 1062134970}
   - component: {fileID: 1062134977}
   - component: {fileID: 1062134976}
+  - component: {fileID: 1062134978}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -5675,7 +5676,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 0}
   directionIndicator: {fileID: 957687576}
   animator: {fileID: 0}
-  flipSpriteOnLeft: 1
+  flipSpriteOnLeft: 0
   currentInput: {x: 0, y: 0}
   moveVelocity: {x: 0, y: 0}
   lastFacingDirection: {x: 0, y: -1}
@@ -5713,18 +5714,18 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: -0.3}
+  m_Offset: {x: 0, y: -0.85}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 2}
+    oldSize: {x: 1.5, y: 2}
     newSize: {x: 1, y: 2}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 0.6, y: 0.4}
+  m_Size: {x: 0.55, y: 0.3}
   m_EdgeRadius: 0
 --- !u!50 &1062134973
 Rigidbody2D:
@@ -5794,8 +5795,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -9095717837082945937, guid: bd3cb4af8406d4436a2ae8c2aafe1f8d, type: 3}
-  m_Color: {r: 0.24, g: 0.55, b: 0.95, a: 1}
+  m_Sprite: {fileID: 21300000, guid: c166eba8cedbb024ab14afa690e9ed8b, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -5859,6 +5860,44 @@ MonoBehaviour:
   startingWateringCan: {fileID: 11400000, guid: 4be8bdf215b7d7843af21d635ffcb84e, type: 2}
   startingSeedPack: {fileID: 11400000, guid: 88bf30a64b9c5cc48b49885155d6d8c0, type: 2}
   startingSeedCount: 15
+--- !u!114 &1062134978
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1062134969}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e0ec0beb4f333e48b5526ee0454ca8d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  idleDown: {fileID: 21300000, guid: c166eba8cedbb024ab14afa690e9ed8b, type: 3}
+  idleUp: {fileID: 21300000, guid: 7661b4d8b24cc384ca74b7df4b706173, type: 3}
+  idleRight: {fileID: 21300000, guid: 529fe2c6e28de7a448b579243739bb4d, type: 3}
+  idleLeft: {fileID: 21300000, guid: 5b876c027bac0004c85d1d86a6528217, type: 3}
+  walkDown:
+  - {fileID: 21300000, guid: 8f07df8b14b5b974e9c8c7b5f4a5214c, type: 3}
+  - {fileID: 21300000, guid: d743302448828dc47961715092e941a2, type: 3}
+  - {fileID: 21300000, guid: fa65e0f098165c4429eff4f363b2a334, type: 3}
+  - {fileID: 21300000, guid: 45b1958ceac803b4f90f38268e2015bb, type: 3}
+  walkUp:
+  - {fileID: 21300000, guid: 402cd294d01c0a141b8d2338b5714dec, type: 3}
+  - {fileID: 21300000, guid: a439bf0b5fa99ff49866adb50f6b6949, type: 3}
+  - {fileID: 21300000, guid: d106253e41de5a644878cc425148fb5f, type: 3}
+  - {fileID: 21300000, guid: a40764a16452e5f4eaeb0e718d383ad6, type: 3}
+  walkRight:
+  - {fileID: 21300000, guid: 2bd932ba5dbc33549ae8618aded66b4d, type: 3}
+  - {fileID: 21300000, guid: fd082e9fadf1fa2418cec5be0bbb0179, type: 3}
+  - {fileID: 21300000, guid: 7cedf7cb677d9f74db0dd4bd2917a9bb, type: 3}
+  - {fileID: 21300000, guid: 466f17a41b512c34c856ef669d0dd4f7, type: 3}
+  walkLeft:
+  - {fileID: 21300000, guid: a8c93e2f036a4e0449a41c5025b5455f, type: 3}
+  - {fileID: 21300000, guid: d7936f3388b2a044f94e6ca37fa774f0, type: 3}
+  - {fileID: 21300000, guid: 95b618fa51d9c434aa95ca0ed86b08c8, type: 3}
+  - {fileID: 21300000, guid: 098e49025e7a48540987c2ee28e1c82c, type: 3}
+  walkFPS: 6
+  sprintFPSMultiplier: 1.5
 --- !u!1 &1142200394
 GameObject:
   m_ObjectHideFlags: 0

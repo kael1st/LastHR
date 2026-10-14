@@ -1,148 +1,151 @@
 using UnityEngine;
 
 /// <summary>
-/// Controls 2D character sprite visuals, directional facing, and walk cycle animations
-/// based on TopDownPlayerController state.
-/// Supports 4-directional visuals (Down, Up, Side/Flipped) and customizable frame rates.
+/// Drives 4-directional 2D sprite animation for the top-down player.
+/// Uses explicit sprites for each direction (Down, Up, Left, Right) with
+/// idle and 4-frame walk cycles. No runtime sprite flipping — all directions
+/// have their own dedicated sprites.
+/// Attach to the same GameObject as TopDownPlayerController and SpriteRenderer.
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(TopDownPlayerController))]
 public class PlayerVisuals2D : MonoBehaviour
 {
+    // =========================================================
+    // Inspector: Idle Sprites (one per direction)
+    // =========================================================
     [Header("Idle Sprites")]
-    [Tooltip("Facing down / front view idle sprite")]
+    [Tooltip("Player facing toward the camera (down).")]
     [SerializeField] private Sprite idleDown;
-
-    [Tooltip("Facing up / back view idle sprite (long braid)")]
+    [Tooltip("Player facing away from the camera (up). Shows the braid.")]
     [SerializeField] private Sprite idleUp;
+    [Tooltip("Player facing right (side profile).")]
+    [SerializeField] private Sprite idleRight;
+    [Tooltip("Player facing left (mirrored side profile).")]
+    [SerializeField] private Sprite idleLeft;
 
-    [Tooltip("Facing right / side profile idle sprite")]
-    [SerializeField] private Sprite idleSide;
+    // =========================================================
+    // Inspector: Walk Cycle Sprites (4 frames per direction)
+    // =========================================================
+    [Header("Walk Cycle Sprites (4 frames each)")]
+    [SerializeField] private Sprite[] walkDown  = new Sprite[4];
+    [SerializeField] private Sprite[] walkUp    = new Sprite[4];
+    [SerializeField] private Sprite[] walkRight = new Sprite[4];
+    [SerializeField] private Sprite[] walkLeft  = new Sprite[4];
 
-    [Header("Walk Animation Cycles")]
-    [Tooltip("Walk cycle frames facing down")]
-    [SerializeField] private Sprite[] walkDown;
-
-    [Tooltip("Walk cycle frames facing up")]
-    [SerializeField] private Sprite[] walkUp;
-
-    [Tooltip("Walk cycle frames facing right / side")]
-    [SerializeField] private Sprite[] walkSide;
-
+    // =========================================================
+    // Inspector: Animation Tuning
+    // =========================================================
     [Header("Animation Settings")]
-    [Tooltip("Walking animation speed in frames per second")]
+    [Tooltip("Walk animation playback speed in frames per second.")]
     [SerializeField] private float walkFPS = 6f;
+    [Tooltip("Multiplier applied to walkFPS when sprinting.")]
+    [SerializeField] private float sprintFPSMultiplier = 1.5f;
 
-    [Tooltip("Sprinting animation speed multiplier")]
-    [SerializeField] private float sprintFPSMultiplier = 1.4f;
-
-    [Tooltip("Flip side sprites horizontally when moving/facing Left")]
-    [SerializeField] private bool flipOnLeft = true;
-
+    // =========================================================
+    // Runtime
+    // =========================================================
     private SpriteRenderer sr;
     private TopDownPlayerController controller;
+    private float animTimer;
+    private TopDownPlayerController.Direction lastDir;
 
-    private float animationTimer;
-    private int currentFrameIndex;
+    // Public property accessors for editor scripts
+    public Sprite IdleDown  { get => idleDown;  set => idleDown  = value; }
+    public Sprite IdleUp    { get => idleUp;    set => idleUp    = value; }
+    public Sprite IdleRight { get => idleRight; set => idleRight = value; }
+    public Sprite IdleLeft  { get => idleLeft;  set => idleLeft  = value; }
 
-    public Sprite IdleDown { get => idleDown; set => idleDown = value; }
-    public Sprite IdleUp { get => idleUp; set => idleUp = value; }
-    public Sprite IdleSide { get => idleSide; set => idleSide = value; }
-    public Sprite[] WalkDown { get => walkDown; set => walkDown = value; }
-    public Sprite[] WalkUp { get => walkUp; set => walkUp = value; }
-    public Sprite[] WalkSide { get => walkSide; set => walkSide = value; }
+    public Sprite[] WalkDown  { get => walkDown;  set => walkDown  = value; }
+    public Sprite[] WalkUp    { get => walkUp;    set => walkUp    = value; }
+    public Sprite[] WalkRight { get => walkRight; set => walkRight = value; }
+    public Sprite[] WalkLeft  { get => walkLeft;  set => walkLeft  = value; }
 
+    // =========================================================
+    // Unity Lifecycle
+    // =========================================================
     private void Awake()
     {
-        sr = GetComponent<SpriteRenderer>();
+        sr         = GetComponent<SpriteRenderer>();
         controller = GetComponent<TopDownPlayerController>();
+
+        // Hide the old FaceIndicator child — directional sprites replace it
+        Transform faceIndicator = transform.Find("FaceIndicator");
+        if (faceIndicator != null) faceIndicator.gameObject.SetActive(false);
+    }
+
+    private void Start()
+    {
+        // Default to idle-down on spawn
+        if (idleDown != null) sr.sprite = idleDown;
     }
 
     private void Update()
     {
         if (sr == null || controller == null) return;
 
-        bool isMoving = controller.IsMoving;
-        TopDownPlayerController.Direction dir = controller.CurrentDirection;
+        var dir     = controller.CurrentDirection;
+        bool moving = controller.IsMoving;
 
-        // 1. Horizontal Flip handling
-        if (flipOnLeft)
+        // Reset timer when direction changes so animation doesn't skip mid-stride
+        if (dir != lastDir)
         {
-            if (dir == TopDownPlayerController.Direction.Left)
-            {
-                sr.flipX = true;
-            }
-            else if (dir == TopDownPlayerController.Direction.Right)
-            {
-                sr.flipX = false;
-            }
-            // Retain current flip when facing Up or Down
+            animTimer = 0f;
+            lastDir   = dir;
         }
 
-        // 2. Sprite selection
-        if (!isMoving)
+        if (moving)
         {
-            // Idle state: reset timer & frame
-            animationTimer = 0f;
-            currentFrameIndex = 0;
+            float fps = controller.IsSprinting
+                ? walkFPS * sprintFPSMultiplier
+                : walkFPS;
 
-            switch (dir)
+            animTimer += Time.deltaTime * fps;
+
+            Sprite[] cycle = GetWalkCycle(dir);
+            if (cycle != null && cycle.Length > 0)
             {
-                case TopDownPlayerController.Direction.Down:
-                    if (idleDown != null) sr.sprite = idleDown;
-                    break;
-                case TopDownPlayerController.Direction.Up:
-                    if (idleUp != null) sr.sprite = idleUp;
-                    break;
-                case TopDownPlayerController.Direction.Left:
-                case TopDownPlayerController.Direction.Right:
-                    if (idleSide != null) sr.sprite = idleSide;
-                    break;
+                int frame = Mathf.FloorToInt(animTimer) % cycle.Length;
+                sr.sprite = cycle[frame];
+            }
+            else
+            {
+                // Fallback — show idle sprite for this direction
+                sr.sprite = GetIdleSprite(dir);
             }
         }
         else
         {
-            // Walking state: advance animation frame
-            float fps = controller.IsSprinting ? walkFPS * sprintFPSMultiplier : walkFPS;
-            animationTimer += Time.deltaTime * fps;
-
-            Sprite[] currentCycle = null;
-            switch (dir)
-            {
-                case TopDownPlayerController.Direction.Down:
-                    currentCycle = (walkDown != null && walkDown.Length > 0) ? walkDown : null;
-                    break;
-                case TopDownPlayerController.Direction.Up:
-                    currentCycle = (walkUp != null && walkUp.Length > 0) ? walkUp : null;
-                    break;
-                case TopDownPlayerController.Direction.Left:
-                case TopDownPlayerController.Direction.Right:
-                    currentCycle = (walkSide != null && walkSide.Length > 0) ? walkSide : null;
-                    break;
-            }
-
-            if (currentCycle != null && currentCycle.Length > 0)
-            {
-                int frame = Mathf.FloorToInt(animationTimer) % currentCycle.Length;
-                sr.sprite = currentCycle[frame];
-            }
-            else
-            {
-                // Fallback to idle sprite if walk cycle is missing
-                switch (dir)
-                {
-                    case TopDownPlayerController.Direction.Down:
-                        if (idleDown != null) sr.sprite = idleDown;
-                        break;
-                    case TopDownPlayerController.Direction.Up:
-                        if (idleUp != null) sr.sprite = idleUp;
-                        break;
-                    case TopDownPlayerController.Direction.Left:
-                    case TopDownPlayerController.Direction.Right:
-                        if (idleSide != null) sr.sprite = idleSide;
-                        break;
-                }
-            }
+            // Idle: freeze on frame 0 and show idle sprite
+            animTimer = 0f;
+            sr.sprite = GetIdleSprite(dir);
         }
+    }
+
+    // =========================================================
+    // Helpers
+    // =========================================================
+    private Sprite GetIdleSprite(TopDownPlayerController.Direction dir)
+    {
+        return dir switch
+        {
+            TopDownPlayerController.Direction.Down  => idleDown,
+            TopDownPlayerController.Direction.Up    => idleUp,
+            TopDownPlayerController.Direction.Right => idleRight,
+            TopDownPlayerController.Direction.Left  => idleLeft,
+            _                                       => idleDown,
+        };
+    }
+
+    private Sprite[] GetWalkCycle(TopDownPlayerController.Direction dir)
+    {
+        return dir switch
+        {
+            TopDownPlayerController.Direction.Down  => walkDown,
+            TopDownPlayerController.Direction.Up    => walkUp,
+            TopDownPlayerController.Direction.Right => walkRight,
+            TopDownPlayerController.Direction.Left  => walkLeft,
+            _                                       => walkDown,
+        };
     }
 }
