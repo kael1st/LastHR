@@ -34,12 +34,14 @@ namespace FarmingSystem
             public int growthStage;
             public bool isRipe;
             public float stageTimer;
+            public int harvestCount;
         }
 
         public List<PlotSnapshot> plotSnapshots = new List<PlotSnapshot>();
 
-        // ────────── Calendar ──────────
+        // ────────── Calendar & Currency ──────────
         public int day;
         public string season;
+        public long coins;
     }
 }

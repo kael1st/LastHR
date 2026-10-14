@@ -14,9 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: crop_turnip
   displayName: Turnip
-  description: A plump, sweet turnip. Freshly harvested from the garden!
+  description: A plump, sweet turnip. Easy to grow and a staple food for any homestead.
   itemType: 2
   toolType: 0
+  rarity: 0
+  sellPrice: 15
+  buyPrice: 30
+  specialItemType: 0
   icon: {fileID: 21300000, guid: b6d11182f6eee0344a4a7d13c59708c1, type: 3}
   maxStack: 99
   cropData: {fileID: 0}

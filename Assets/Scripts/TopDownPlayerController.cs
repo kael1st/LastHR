@@ -112,6 +112,15 @@ public class TopDownPlayerController : MonoBehaviour
 
     private void GatherInput()
     {
+        // Stop movement while inventory UI or vendor UI is open
+        if ((FarmingSystem.InventoryUI.Instance != null && FarmingSystem.InventoryUI.Instance.IsInventoryOpen) ||
+            (FarmingSystem.VendorUI.Instance != null && FarmingSystem.VendorUI.Instance.IsOpen))
+        {
+            currentInput = Vector2.zero;
+            isSprinting = false;
+            return;
+        }
+
         // Read raw input axes (-1, 0, 1)
         float x = Input.GetAxisRaw("Horizontal");
         float y = Input.GetAxisRaw("Vertical");

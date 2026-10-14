@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ceac3933621ac04a820c2d19d9853d5, type: 3}
+  m_Name: StarfruitCrop
+  m_EditorClassIdentifier: 
+  cropName: Starfruit
+  rarity: 2
+  harvestItem: {fileID: 11400000, guid: bb7ea58e79722474fb364dfe4c6d1eaf, type: 2}
+  minHarvestYield: 1
+  maxHarvestYield: 2
+  realtimeSecondsPerStage: 22
+  daysToMature: 3
+  stageSprites:
+  - {fileID: 21300000, guid: 290f7caf85a91684b9da147afe352640, type: 3}
+  - {fileID: 21300000, guid: c19c665ee0fc1754983d0c36f34b91eb, type: 3}
+  - {fileID: 21300000, guid: 1769a5ad64680144287428c4d42b1934, type: 3}
+  - {fileID: 21300000, guid: ef4c45b5f734c884b9a37f685a047337, type: 3}
+  regrows: 0
+  regrowStage: 0
+  maxHarvestCycles: 0

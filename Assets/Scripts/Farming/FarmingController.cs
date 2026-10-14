@@ -20,8 +20,7 @@ namespace FarmingSystem
         [SerializeField] private float maxMouseInteractDistance = 2.5f;
 
         [Header("Controls")]
-        [SerializeField] private KeyCode interactKey = KeyCode.Space;
-        [SerializeField] private KeyCode alternateInteractKey = KeyCode.E;
+        [SerializeField] private KeyCode interactKey = KeyCode.E;
         [SerializeField] private KeyCode advanceDayKey = KeyCode.T;
 
         [Header("Feedback")]
@@ -42,6 +41,17 @@ namespace FarmingSystem
 
         private void Update()
         {
+            if ((InventoryUI.Instance != null && InventoryUI.Instance.IsInventoryOpen) ||
+                (VendorUI.Instance != null && VendorUI.Instance.IsOpen))
+            {
+                if (currentTargetPlot != null)
+                {
+                    currentTargetPlot.SetHighlight(false);
+                    currentTargetPlot = null;
+                }
+                return;
+            }
+
             UpdateTargetPlot();
             HandleInteractionInput();
             HandleDayAdvanceInput();
@@ -101,7 +111,7 @@ namespace FarmingSystem
 
         private void HandleInteractionInput()
         {
-            bool keyPressed   = Input.GetKeyDown(interactKey) || Input.GetKeyDown(alternateInteractKey);
+            // Farming interactions strictly use Left Click
             bool mouseClicked = Input.GetMouseButtonDown(0);
 
             // Avoid triggering when clicking on UI
@@ -111,13 +121,11 @@ namespace FarmingSystem
                 return;
             }
 
-            if (!keyPressed && !mouseClicked) return;
-
             // ── Special item check (Pocket Watch) ──────────────────────────────────
             ItemData heldItem = playerInventory != null ? playerInventory.GetSelectedItem() : null;
             if (heldItem != null && heldItem.IsPocketWatch)
             {
-                if (keyPressed || mouseClicked)
+                if (mouseClicked || Input.GetKeyDown(interactKey))
                 {
                     if (InventoryUI.Instance != null)
                         InventoryUI.Instance.RequestPocketWatchUse();
@@ -125,9 +133,32 @@ namespace FarmingSystem
                 }
             }
 
-            // ── Garden plot interaction ────────────────────────────────────────────
-            if (currentTargetPlot != null)
-                ExecuteInteraction(currentTargetPlot);
+            // ── Garden plot interaction (Left-Click Only) ──────────────────────────
+            if (mouseClicked)
+            {
+                GardenPlot targetPlot = null;
+
+                // Priority 1: Direct mouse-clicked plot within interaction range
+                if (mainCamera != null)
+                {
+                    Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
+                    mouseWorld.z = 0f;
+                    float distToMouse = Vector2.Distance(transform.position, mouseWorld);
+                    if (distToMouse <= maxMouseInteractDistance)
+                    {
+                        Collider2D hit = Physics2D.OverlapPoint(mouseWorld);
+                        if (hit != null)
+                            targetPlot = hit.GetComponentInParent<GardenPlot>();
+                    }
+                }
+
+                // Priority 2: Currently highlighted / facing plot
+                if (targetPlot == null)
+                    targetPlot = currentTargetPlot;
+
+                if (targetPlot != null)
+                    ExecuteInteraction(targetPlot);
+            }
         }
 
         private void ExecuteInteraction(GardenPlot plot)

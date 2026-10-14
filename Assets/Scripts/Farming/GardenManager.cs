@@ -165,11 +165,12 @@ namespace FarmingSystem
 
         // ─────────────────── Snapshot helpers ───────────────────
 
-        private GameStateSnapshot CaptureSnapshot()
+        public GameStateSnapshot CaptureSnapshot()
         {
             var snap = new GameStateSnapshot();
             snap.day    = currentDay;
             snap.season = season;
+            snap.coins  = CurrencyManager.Instance != null ? CurrencyManager.Instance.Coins : 0;
 
             // Inventory
             if (PlayerInventory.Instance != null)
@@ -196,7 +197,8 @@ namespace FarmingSystem
                     cropDataName = plot.CurrentCrop != null ? plot.CurrentCrop.name : string.Empty,
                     growthStage  = plot.CurrentGrowthStage,
                     isRipe       = plot.IsRipe,
-                    stageTimer   = 0f
+                    stageTimer   = 0f,
+                    harvestCount = plot.HarvestCount
                 });
             }
 
@@ -205,9 +207,11 @@ namespace FarmingSystem
 
         private void ApplySnapshot(GameStateSnapshot snap)
         {
-            // Restore calendar
+            // Restore calendar & currency
             currentDay = snap.day;
             season     = snap.season;
+            if (CurrencyManager.Instance != null)
+                CurrencyManager.Instance.SetCoins(snap.coins);
 
             // Restore inventory
             if (PlayerInventory.Instance != null && snap.inventorySlots != null)
@@ -256,7 +260,7 @@ namespace FarmingSystem
                     if (!string.IsNullOrEmpty(ps.cropDataName))
                         allCrops.TryGetValue(ps.cropDataName, out crop);
 
-                    target.RestoreFromSnapshot(ps.soilState, crop, ps.growthStage, ps.isRipe, ps.stageTimer);
+                    target.RestoreFromSnapshot(ps.soilState, crop, ps.growthStage, ps.isRipe, ps.stageTimer, ps.harvestCount);
                 }
             }
         }

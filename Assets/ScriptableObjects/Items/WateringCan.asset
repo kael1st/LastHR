@@ -14,9 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: tool_watering_can
   displayName: Watering Can
-  description: Waters tilled soil. Crops need water to grow!
+  description: Waters tilled soil. Crops need water each day to grow!
   itemType: 0
   toolType: 2
+  rarity: 0
+  sellPrice: 50
+  buyPrice: 100
+  specialItemType: 0
   icon: {fileID: 21300000, guid: 609b5fa460cc74646aedde6cad9e6e02, type: 3}
   maxStack: 1
   cropData: {fileID: 0}

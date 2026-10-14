@@ -17,6 +17,10 @@ MonoBehaviour:
   description: Tills raw soil into farmland ready for seeds.
   itemType: 0
   toolType: 1
+  rarity: 0
+  sellPrice: 50
+  buyPrice: 100
+  specialItemType: 0
   icon: {fileID: 21300000, guid: 4454cc72883d57f47bc76cb47fccba4e, type: 3}
   maxStack: 1
   cropData: {fileID: 0}

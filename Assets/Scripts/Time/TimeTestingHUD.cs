@@ -40,10 +40,7 @@ namespace FarmingSystem
 
         private void Start()
         {
-            if (panelRoot == null)
-            {
-                BuildHUD();
-            }
+            BuildHUD();
 
             if (panelRoot != null)
                 panelRoot.SetActive(startOpen);
@@ -177,6 +174,13 @@ namespace FarmingSystem
             if (canvas == null) canvas = FindObjectOfType<Canvas>();
             if (canvas == null) return;
 
+            // Destroy stale unhooked instances from editor scene saving if any
+            Transform existingBtn = canvas.transform.Find("TimeTestToggleBtn");
+            if (existingBtn != null) Destroy(existingBtn.gameObject);
+
+            Transform existingPanel = canvas.transform.Find("TimeTestingPanel");
+            if (existingPanel != null) Destroy(existingPanel.gameObject);
+
             // 1. Toggle Button (top center, completely clear of DayHUD and ControlsGuide)
             var toggleGO = new GameObject("TimeTestToggleBtn");
             toggleGO.transform.SetParent(canvas.transform, false);
@@ -185,7 +189,7 @@ namespace FarmingSystem
             toggleRT.anchorMax = new Vector2(0.5f, 1f);
             toggleRT.pivot     = new Vector2(0.5f, 1f);
             toggleRT.anchoredPosition = new Vector2(0, -10);
-            toggleRT.sizeDelta        = new Vector2(160, 30);
+            toggleRT.sizeDelta        = new Vector2(170, 32);
             var toggleImg = toggleGO.AddComponent<Image>();
             toggleImg.color = new Color(0.18f, 0.22f, 0.35f, 0.95f);
             toggleVisibilityButton = toggleGO.AddComponent<Button>();
@@ -197,10 +201,11 @@ namespace FarmingSystem
             toggleTxtRT.anchorMin = Vector2.zero; toggleTxtRT.anchorMax = Vector2.one;
             toggleTxtRT.offsetMin = toggleTxtRT.offsetMax = Vector2.zero;
             var toggleTxt = toggleTxtGO.AddComponent<Text>();
-            toggleTxt.text = "⏱ Test Time [ ` ]";
+            toggleTxt.text = "⏱ TIME TESTER";
             toggleTxt.fontSize = 13;
+            toggleTxt.fontStyle = FontStyle.Bold;
             toggleTxt.alignment = TextAnchor.MiddleCenter;
-            toggleTxt.color = Color.white;
+            toggleTxt.color = new Color(1f, 0.9f, 0.45f);
             AssignFont(toggleTxt);
 
             // 2. Main Panel Window (Draggable)

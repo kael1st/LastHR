@@ -22,6 +22,7 @@ namespace FarmingSystem
         [SerializeField] private int currentGrowthStage = 0;
         [SerializeField] private bool isRipe = false;
         [SerializeField] private float stageTimer = 0f;
+        [SerializeField] private int harvestCount = 0;
 
         [Header("Growth Settings")]
         [Tooltip("If true, watered crops grow automatically in real-time over seconds. Can also be advanced via Day Cycle.")]
@@ -38,13 +39,14 @@ namespace FarmingSystem
         [SerializeField] private Sprite tilledWateredSprite;
 
         // Public properties
-        public PlotSoilState SoilState       => soilState;
-        public CropData      CurrentCrop     => currentCrop;
+        public PlotSoilState SoilState          => soilState;
+        public CropData      CurrentCrop        => currentCrop;
         public int           CurrentGrowthStage => currentGrowthStage;
-        public bool          IsRipe          => isRipe;
-        public bool          HasCrop         => currentCrop != null;
-        public bool          IsWatered       => soilState == PlotSoilState.TilledWatered;
-        public bool          IsTilled        => soilState != PlotSoilState.Untilled;
+        public bool          IsRipe             => isRipe;
+        public bool          HasCrop            => currentCrop != null;
+        public bool          IsWatered          => soilState == PlotSoilState.TilledWatered;
+        public bool          IsTilled           => soilState != PlotSoilState.Untilled;
+        public int           HarvestCount       => harvestCount;
 
         private void Awake()
         {
@@ -226,13 +228,14 @@ namespace FarmingSystem
         /// Called by GardenManager.RewindDay() when the Pocket Watch is used.
         /// </summary>
         public void RestoreFromSnapshot(PlotSoilState newSoilState, CropData newCrop,
-                                        int newGrowthStage, bool newIsRipe, float newStageTimer)
+                                        int newGrowthStage, bool newIsRipe, float newStageTimer, int newHarvestCount = 0)
         {
             soilState          = newSoilState;
             currentCrop        = newCrop;
             currentGrowthStage = newGrowthStage;
             isRipe             = newIsRipe;
             stageTimer         = newStageTimer;
+            harvestCount       = newHarvestCount;
             UpdateVisuals();
         }
 
@@ -269,11 +272,17 @@ namespace FarmingSystem
             currentGrowthStage = 0;
             isRipe             = false;
             stageTimer         = 0f;
+            harvestCount       = 0;
 
             UpdateVisuals();
             if (Application.isPlaying && cropRenderer != null)
                 StartCoroutine(AnimateBounce(cropRenderer.transform, 1.25f, 0.2f));
             return true;
+        }
+
+        public void SetHarvestCount(int count)
+        {
+            harvestCount = Mathf.Max(0, count);
         }
 
         public bool Harvest(PlayerInventory inventory, out ItemData harvestedItem, out int yieldAmount)
@@ -289,8 +298,11 @@ namespace FarmingSystem
             if (inventory != null && harvestedItem != null)
                 inventory.AddItem(harvestedItem, yieldAmount);
 
-            // Regrow or clear
-            if (currentCrop.regrows)
+            harvestCount++;
+
+            // Regrow or clear when exhausted
+            bool canRegrow = currentCrop.regrows && (currentCrop.maxHarvestCycles <= 0 || harvestCount < currentCrop.maxHarvestCycles);
+            if (canRegrow)
             {
                 currentGrowthStage = currentCrop.regrowStage;
                 isRipe             = false;
@@ -302,6 +314,7 @@ namespace FarmingSystem
                 currentGrowthStage = 0;
                 isRipe             = false;
                 stageTimer         = 0f;
+                harvestCount       = 0;
             }
 
             UpdateVisuals();
@@ -366,7 +379,31 @@ namespace FarmingSystem
                 }
             }
 
-            // 4. Seed Pack interaction
+            // 4. Shovel interaction: Remove planted seeds / crops
+            if (heldItem != null && heldItem.IsTool && heldItem.toolType == ToolType.Shovel)
+            {
+                if (HasCrop)
+                {
+                    string cropName = currentCrop.cropName;
+                    currentCrop = null;
+                    currentGrowthStage = 0;
+                    isRipe = false;
+                    stageTimer = 0f;
+                    harvestCount = 0;
+                    UpdateVisuals();
+                    if (Application.isPlaying && soilRenderer != null)
+                        StartCoroutine(AnimateBounce(soilRenderer.transform, 1.15f, 0.15f));
+                    feedbackMessage = $"Dug up and removed {cropName} with Shovel.";
+                    return true;
+                }
+                else
+                {
+                    feedbackMessage = "No seeds or crops to remove here.";
+                    return false;
+                }
+            }
+
+            // 5. Seed Pack interaction
             if (heldItem != null && heldItem.IsSeed)
             {
                 if (soilState == PlotSoilState.Untilled)

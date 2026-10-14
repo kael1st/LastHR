@@ -14,9 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: seeds_turnip
   displayName: Turnip Seeds
-  description: Plant on tilled soil. Grows in 4 stages when watered.
+  description: Common seeds. Fast 6s growth cycle (1 day). Easy to harvest.
   itemType: 1
   toolType: 0
-  icon: {fileID: 21300000, guid: 640802ecf80a30448811e6c1d8dfa7fa, type: 3}
+  rarity: 0
+  sellPrice: 5
+  buyPrice: 10
+  specialItemType: 0
+  icon: {fileID: 21300000, guid: 8fa7eaaeaae435749a253d9ffb79a6ad, type: 3}
   maxStack: 99
   cropData: {fileID: 11400000, guid: ba7a3019915f1ca47b9229b4214f553f, type: 2}

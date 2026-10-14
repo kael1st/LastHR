@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 589013ddcf2708940b6fda6818d16e55, type: 3}
+  m_Name: StarfruitSeeds
+  m_EditorClassIdentifier: 
+  id: seeds_starfruit
+  displayName: Starfruit Seeds
+  description: Legendary seeds. Absorbs starlight to produce exquisite five-pointed
+    fruit.
+  itemType: 1
+  toolType: 0
+  rarity: 2
+  sellPrice: 95
+  buyPrice: 190
+  specialItemType: 0
+  icon: {fileID: 21300000, guid: 65fa488f9e02cf04096bb01262e19d22, type: 3}
+  maxStack: 99
+  cropData: {fileID: 11400000, guid: 5cd0bfe508fc29c448649670e6fe3342, type: 2}
